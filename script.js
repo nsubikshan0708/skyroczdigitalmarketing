@@ -400,14 +400,15 @@ function initLeadGenerationModal() {
     const modalOverlay = document.getElementById('lead-modal-overlay');
     const modal = document.querySelector('.lead-modal');
     const modalClose = document.getElementById('lead-modal-close');
-    const form = document.getElementById('lead-modal-form');
+    const form = modal?.querySelector('#lead-modal-form');
     const responsePopup = document.getElementById('lead-response-popup');
     const responseCard = document.getElementById('lead-response-card');
     const responseIcon = document.getElementById('lead-response-icon');
     const responseTitle = document.getElementById('lead-response-title');
     const responseMessage = document.getElementById('lead-response-message');
-    const ctaButtons = Array.from(document.querySelectorAll('a.cta-btn, a.btn-primary, a.btn-secondary, a.btn-cta-glow, button.btn-primary, button.btn-secondary, button.cta-btn'))
-        .filter(el => !el.closest('form') && !el.closest('.lead-modal'));
+    const ctaButtons = document.querySelectorAll(
+        '.nav-actions > .cta-nav, .hero-cta-group > .btn-primary, .about-content > .btn-primary, .cta-content > .btn-cta-glow'
+    );
 
     // EmailJS configuration constants
     const EMAILJS_PUBLIC_KEY = 'r0qmkTO9g4mJM5bbI';
@@ -420,15 +421,21 @@ function initLeadGenerationModal() {
 
     const focusableSelectors = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
     let lastFocusedElement = null;
+    let previousBodyOverflow = '';
+    let previousDocumentOverflow = '';
 
     // Open the modal and prepare focus + form state
     function openModal() {
         lastFocusedElement = document.activeElement;
+        previousBodyOverflow = document.body.style.overflow;
+        previousDocumentOverflow = document.documentElement.style.overflow;
         modalOverlay.classList.add('active');
         modalOverlay.setAttribute('aria-hidden', 'false');
         document.body.style.overflow = 'hidden';
+        document.documentElement.style.overflow = 'hidden';
         clearFormErrors();
         form.reset();
+        form.scrollTop = 0;
         const firstField = form.querySelector('input, select, textarea');
         if (firstField instanceof HTMLElement) {
             firstField.focus();
@@ -438,7 +445,9 @@ function initLeadGenerationModal() {
     function closeModal() {
         modalOverlay.classList.remove('active');
         modalOverlay.setAttribute('aria-hidden', 'true');
-        document.body.style.overflow = ''; 
+        document.body.style.overflow = previousBodyOverflow;
+        document.documentElement.style.overflow = previousDocumentOverflow;
+        form.scrollTop = 0;
         if (lastFocusedElement instanceof HTMLElement) lastFocusedElement.focus();
     }
 
@@ -470,7 +479,7 @@ function initLeadGenerationModal() {
     }
 
     function validateField(field, errorId, validator) {
-        const errorElement = document.getElementById(errorId);
+        const errorElement = form.querySelector(`#${errorId}`);
         const value = field.value.trim();
         const error = validator(value);
         errorElement.textContent = error || '';
@@ -478,11 +487,11 @@ function initLeadGenerationModal() {
     }
 
     function validateForm() {
-        const name = document.getElementById('modal-name');
-        const phone = document.getElementById('modal-phone');
-        const email = document.getElementById('modal-email');
-        const service = document.getElementById('modal-service');
-        const message = document.getElementById('modal-message');
+        const name = form.querySelector('#modal-name');
+        const phone = form.querySelector('#modal-phone');
+        const email = form.querySelector('#modal-email');
+        const service = form.querySelector('#modal-service');
+        const message = form.querySelector('#modal-message');
 
         const isNameValid = validateField(name, 'error-modal-name', value => value ? '' : 'Name is required.');
         const isPhoneValid = validateField(phone, 'error-modal-phone', value => {
@@ -519,14 +528,10 @@ function initLeadGenerationModal() {
     }
 
     ctaButtons.forEach(button => {
-        const text = button.textContent.trim().toLowerCase();
-        if (text.includes('quote') || text.includes('service') || text.includes('connect') || text.includes('contact') || text.includes('started') || button.classList.contains('cta-btn') || button.classList.contains('btn-primary')) {
-            button.addEventListener('click', (event) => {
-                const isAnchor = button.tagName.toLowerCase() === 'a';
-                if (isAnchor) event.preventDefault();
-                openModal();
-            });
-        }
+        button.addEventListener('click', event => {
+            event.preventDefault();
+            openModal();
+        });
     });
 
     modalClose.addEventListener('click', closeModal);
@@ -552,11 +557,11 @@ function initLeadGenerationModal() {
         if (!validateForm()) return;
 
         const templateParams = {
-            from_name: document.getElementById('modal-name').value.trim(),
-            from_email: document.getElementById('modal-email').value.trim(),
-            contact_number: document.getElementById('modal-phone').value.trim(),
-            required_service: document.getElementById('modal-service').value,
-            message: document.getElementById('modal-message').value.trim(),
+            from_name: form.querySelector('#modal-name').value.trim(),
+            from_email: form.querySelector('#modal-email').value.trim(),
+            contact_number: form.querySelector('#modal-phone').value.trim(),
+            required_service: form.querySelector('#modal-service').value,
+            message: form.querySelector('#modal-message').value.trim(),
             submitted_at: new Date().toLocaleString()
         };
 
